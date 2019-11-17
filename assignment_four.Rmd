@@ -1,0 +1,267 @@
+---
+title: "esm_assignment_4"
+author: "Peyton Moore"
+date: "11/11/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE)
+```
+
+
+
+```{r}
+#Load packages
+
+library(tidyverse)
+library(janitor)
+library(here)
+library(tidyr)
+library(ggridges)
+library(lattice)
+library(knitr)
+library(kableExtra)
+```
+
+
+
+```{r}
+#Load in data 
+
+lobster_abundance <- read_csv(("lobster_abundance_sbc_lter.csv"),
+                               na = "-99999") %>% 
+  janitor::clean_names() %>% 
+  tidyr::uncount(count)
+
+
+```
+
+ 
+```{r}
+#explore data
+
+ggplot(lobster_abundance, aes(x = site, y = size_mm)) +
+  geom_jitter(aes(color = site), 
+              alpha = 0.5, 
+              width = 0.2)
+
+ggplot(lobster_abundance, aes(x = size_mm)) +
+  geom_histogram(aes(fill = site)) +
+  facet_wrap(~site, scales = "free")
+  
+ggplot(lobster_abundance, aes(sample = size_mm)) +
+  geom_qq() +
+  facet_wrap(~site)
+
+
+```
+
+### Introduction 
+ A short (7 - 8 sentence) introduction that helps the reader understand the purpose/motivation of the research, and previews the content of the report. 
+
+### Data and Methods 
+ A brief ‘Data and Methods’ section (5 - 6 sentences) summarizing the data and how it was analyzed. Briefly describe the variables being studied in this report. Include the types of statistical tests performed, significance level used, and software (with version) for analysis.
+
+### Results 
+
+-----------------------------------
+#### Part A: annual lobster abundance by site 
+-------------------------------------
+
+
+```{r}
+#Data w MPA status column 
+
+lobster_annual <- lobster_abundance %>% 
+  group_by(site) %>% 
+  count(year) %>% 
+  mutate(MPA = case_when(
+    site %in% c("NAPL","IVEE") ~ "protected", 
+    site %in% c("AQUE","CARP","MOHK") ~ "unprotected") 
+  )
+```
+
+
+```{r}
+#graph of lobster abundance by site over time
+
+ggplot(lobster_annual, aes(x = year, y = n)) +
+  geom_point(aes(color = site, pch = MPA)) +
+  geom_line(aes(color = site)) +
+  labs(x = "Year", y = "Annual Lobster Abundance", title = "Annual Lobster Abundance Across Five Different Sites") +
+  theme_minimal()
+```
+
+
+
+
+-----------------------------
+#### Part B: size distribution of lobsters in 2012 and 2018
+-----------------------------
+
+
+
+```{r}
+#size distribution data for 2012 
+
+lobster_size_12 <- lobster_abundance %>% 
+  select(date, year, site, size_mm) %>% 
+  filter(year == 2012)
+
+#graph size distribution for 2012
+
+ggplot(lobster_size_12, aes(x = size_mm)) +
+  geom_histogram(aes(fill = site)) +
+  facet_wrap(~site, scales = "free")
+```
+
+
+```{r}
+#Size distribution data for 2018
+
+lobster_size_18 <- lobster_abundance %>% 
+  select(date, year, site, size_mm) %>% 
+  filter(year == 2018)
+
+#graph size distribution for 2018
+
+ggplot(lobster_size_18, aes(x = size_mm)) +
+  geom_histogram(aes(fill = site)) +
+  facet_wrap(~site, scales = "free")
+```
+
+
+
+----------------------------------
+#### Results C: MPA vs not 
+-----------------------------------
+
+
+
+```{r}
+lobster_mpa <- lobster_abundance %>% 
+  filter(year %in% c("2012","2018")) %>% 
+  mutate(mpa_status = case_when(
+    site %in% c("NAPL","IVEE") ~ "Protected", 
+    site %in% c("AQUE","CARP","MOHK") ~ "Unprotected")) %>% 
+  select(year, site, size_mm, mpa_status)
+  
+```
+
+
+summary data to find means for different groups
+
+```{r}
+#Summary data to find mean sizes for different groups 
+
+lob_summary <- lobster_mpa %>% 
+  group_by(year, mpa_status) %>% 
+  summarise(avg_size_mm = mean(size_mm, na.rm = TRUE), 
+            st_dev = sd(size_mm, na.rm = TRUE), 
+            sample_size = n(), 
+            #median_size = median(size_mm, na.rm = TRUE), 
+            size_min = min(size_mm, na.rm = TRUE), 
+            size_max = max(size_mm, na.rm = TRUE)
+            ) 
+
+
+
+
+
+
+
+```
+
+
+
+
+```{r}
+#Sorting data into four separate data frames for stats analysis
+
+lob_2012_mpa <- lobster_mpa %>% 
+  filter(mpa_status %in% "Protected") %>% 
+  filter(year %in% "2012")
+
+lob_2018_mpa <- lobster_mpa %>% 
+  filter(mpa_status %in% "Protected") %>% 
+  filter(year %in% "2018")
+
+lob_2012_unprotected <- lobster_mpa %>% 
+  filter(mpa_status %in% "Unprotected") %>% 
+  filter(year %in% "2012")
+
+lob_2018_unprotected <- lobster_mpa %>% 
+  filter(mpa_status %in% "Unprotected") %>% 
+  filter(year %in% "2018")
+
+
+```
+
+
+
+
+```{r}
+#T Tests 
+#Is there a difference in the mean size of lobsters in 2012 at mpa sites v non mpa sites?
+
+size_v_protection_2012 <- t.test(lob_2012_mpa$size_mm, lob_2012_unprotected$size_mm)
+
+size_v_protection_2012
+```
+
+
+
+```{r}
+#Is there a difference in the mean size of lobsters in 2018 at mpa sites v non mpa sites?
+
+
+size_v_protection_2018 <- t.test(lob_2018_mpa$size_mm, lob_2018_unprotected$size_mm)
+
+size_v_protection_2018
+```
+
+ 
+
+```{r}
+#Is there a difference in the mean size of lobsters at mpa sites in 2012 v 2018?
+
+size_v_year_mpa <- t.test(lob_2018_mpa$size_mm, lob_2012_mpa$size_mm)
+
+size_v_year_mpa
+```
+
+
+
+```{r}
+#Is there a difference in the mean size of lobsters at unprotected sites in 2012 v 2018? 
+
+size_v_year_unprotected <- t.test(lob_2018_unprotected$size_mm, lob_2012_unprotected$size_mm)
+
+size_v_year_unprotected
+```
+
+ 
+
+```{r}
+#make a summary table with important info
+
+lob_sum_table <- lob_summary %>% 
+  kable(col.names = c("Year",
+                      "MPA Status", 
+                      "Average Lobster Size(mm)", 
+                      "Standard Deviation", 
+                      "Sample Size",
+                      "Minnimum Size (mm)", 
+                      "Maximum Size (mm)")) %>% 
+  add_header_above(c("Spiny Lobster Sizes in Santa Barbara" = 7)) %>% 
+  kable_styling(bootstrap_options = c("hover",
+                                      "condensed", 
+                                      "responsive"), 
+                fixed_thead = T)
+
+lob_sum_table
+```
+
+
+ 
