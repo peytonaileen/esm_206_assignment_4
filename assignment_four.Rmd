@@ -1,14 +1,25 @@
 ---
-title: "esm_assignment_4"
+title: "Spiny Lobster Abundance and Population Characteristics Within and Outside of Marine Protected Areas Along the Santa Barbara Coast"
+subtitle: "A report for ESM 206 Data Analysis Assignment 4"
 author: "Peyton Moore"
-date: "11/11/2019"
+date: "11/18/2019"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
+
+### Introduction 
+ 
+The Spiny Lobster fishery has great ecological and socioeconomic importance in the Santa Barbara community. Implementation of marine reserves has served as a method to enhance the health of marine environments and particular fisheries, while also benefiting fishers through spillover effects. Evaluation of marine reserves however has previously been limited by a lack of long term and replicable monitoring efforts (Kay et al., 2012). The Santa Barbara Coastal Long-Term Ecological Research (SBC LTER) program was established in 2000 to address this need for a more in-depth understanding of how marine reserves impact kelp forest communities. Spiny lobsters are considered to have heavy influences on the overall health of kelp forests, as they are a predator of sea urchins which graze on kelp (Foster et al., 2010). By maintaining healthy lobster populations, urchin populations will be appropriately checked to avoid overgrazing of kelp. This report will explore spiny lobster populations at five sites along the Santa Barbara coast, and evaluate population differences over time, across sites, and as it relates to protection status. 
+
+### Data and Methods 
+
+The data utilized in this report was collected as a part of the Santa Barbara Coastal Long-Term Ecological Research Program. Sampling began in 2012 and is ongoing, with surveys conducted by divers in late summer before the start of the fishing season (Reed 2019). Sizes were determined by visual estimate of carapace length (mm) and abundance by count of individuals of each size. The analysis in this report explored three primary areas of interest: annual lobster abundance by site, size distribution of lobsters, and lobster size and abundance inside and outside of marine reserves. Average lobster size within and outside of marine reserves was compared for 2012 and 2018 by two sample t-tests (α = 0.05 throughout).All data analsis and figures were created using R software version 3.6.1. 
+
+### Results 
 
 
 ```{r}
@@ -57,17 +68,9 @@ ggplot(lobster_abundance, aes(sample = size_mm)) +
 
 ```
 
-### Introduction 
- A short (7 - 8 sentence) introduction that helps the reader understand the purpose/motivation of the research, and previews the content of the report. 
 
-### Data and Methods 
- A brief ‘Data and Methods’ section (5 - 6 sentences) summarizing the data and how it was analyzed. Briefly describe the variables being studied in this report. Include the types of statistical tests performed, significance level used, and software (with version) for analysis.
+#### 1. Changes in annual lobster abundance by site  
 
-### Results 
-
------------------------------------
-#### Part A: annual lobster abundance by site 
--------------------------------------
 
 
 ```{r}
@@ -75,30 +78,46 @@ ggplot(lobster_abundance, aes(sample = size_mm)) +
 
 lobster_annual <- lobster_abundance %>% 
   group_by(site) %>% 
-  count(year) %>% 
+  #count(year) %>% 
   mutate(MPA = case_when(
-    site %in% c("NAPL","IVEE") ~ "protected", 
-    site %in% c("AQUE","CARP","MOHK") ~ "unprotected") 
+    site %in% c("NAPL","IVEE") ~ "Protected", 
+    site %in% c("AQUE","CARP","MOHK") ~ "Unprotected") 
   )
+
+lobster_annual$site <- gsub("IVEE", "Isla Vista", lobster_annual$site)
+
+lobster_annual$site <- gsub("NAPL", "Naples", lobster_annual$site)
+
+lobster_annual$site <- gsub("AQUE", "Arroyo Quemando", lobster_annual$site)
+
+lobster_annual$site <- gsub("CARP", "Carpinteria", lobster_annual$site)
+
+lobster_annual$site <- gsub("MOHK", "Mohawk", lobster_annual$site)
 ```
 
 
 ```{r}
 #graph of lobster abundance by site over time
 
-ggplot(lobster_annual, aes(x = year, y = n)) +
-  geom_point(aes(color = site, pch = MPA)) +
-  geom_line(aes(color = site)) +
-  labs(x = "Year", y = "Annual Lobster Abundance", title = "Annual Lobster Abundance Across Five Different Sites") +
-  theme_minimal()
+ggplot(lobster_annual, aes(x = year)) +
+  geom_histogram(binwidth = 1, 
+                 #show.legend = FALSE, 
+                 aes(fill = MPA)) +
+  facet_wrap(~site) +
+  #scale_x_continuous(expand = c(0,0)) +
+  labs(x = "Year",
+       y = "Annual Lobster Abundance",
+       title = "Annual Lobster Abundance Across Five Sites", 
+       caption = "***Figure 1: Annual Lobster Abundance Across Five Sites***") +
+  scale_fill_manual(values = c("deepskyblue", "deepskyblue4"))+
+  theme_grey()
 ```
 
 
+![](yr_abundance_graph)
 
+#### 2. Size distribution  comparison of lobsters in 2012 and 2018
 
------------------------------
-#### Part B: size distribution of lobsters in 2012 and 2018
------------------------------
 
 
 
@@ -133,9 +152,9 @@ ggplot(lobster_size_18, aes(x = size_mm)) +
 
 
 
-----------------------------------
-#### Results C: MPA vs not 
------------------------------------
+
+#### 3. Comparison of average lobster size(mm) between sites that are within marine reserves and sites that are not within marine reserves in 2012 and 2018
+
 
 
 
@@ -263,5 +282,7 @@ lob_sum_table <- lob_summary %>%
 lob_sum_table
 ```
 
+### Summary 
 
- 
+### References 
+
